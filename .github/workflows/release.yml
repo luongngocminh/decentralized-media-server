@@ -153,6 +153,10 @@ jobs:
       - name: Install dev-tools
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get install -y --no-install-recommends pkg-config musl-dev musl-tools protobuf-compiler
+      
+      - name: Install mac dev-tools
+        if: matrix.os == 'macos-latest'
+        run: brew install protobuf
 
       - name: Patch some libs
         run: |
@@ -163,7 +167,7 @@ jobs:
         with:
           use-cross: ${{ matrix.cross }}
           command: build
-          args: --verbose --release --package ${{ env.APP_NAME }} --target ${{ matrix.target }} --progress=plain
+          args: --verbose --release --package ${{ env.APP_NAME }} --target ${{ matrix.target }}
 
       - name: Rename file
         if: ${{ matrix.build != 'windows gnu x64' && matrix.build != 'windows msvc x64' }}
