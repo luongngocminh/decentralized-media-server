@@ -28,6 +28,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       RUST_BACKTRACE: 1
+      CROSS_BUILD_OPTS: --progress=plain
+ 
     strategy:
       matrix:
         build:
