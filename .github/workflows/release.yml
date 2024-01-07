@@ -163,7 +163,7 @@ jobs:
         with:
           use-cross: ${{ matrix.cross }}
           command: build
-          args: --verbose --release --package ${{ env.APP_NAME }} --target ${{ matrix.target }}
+          args: --verbose --release --package ${{ env.APP_NAME }} --target ${{ matrix.target }} --progress=plain
 
       - name: Rename file
         if: ${{ matrix.build != 'windows gnu x64' && matrix.build != 'windows msvc x64' }}
