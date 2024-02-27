@@ -1,6 +1,6 @@
 # Kubernetes
 
-You can install into kubernetes cluster by Helm chart
+You can add the Atm0s Media Stack into your kubernetes cluster by using Helm chart
 
 ```bash
 helm repo add 8xff https://8xff.github.io/helm
