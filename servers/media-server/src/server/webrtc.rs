@@ -1,4 +1,4 @@
-use std::{ops::Deref, time::Duration};
+use std::{net::IpAddr, ops::Deref, time::Duration};
 
 use async_std::{channel::Sender, prelude::FutureExt as _, stream::StreamExt};
 use clap::Parser;
@@ -63,13 +63,17 @@ pub struct WebrtcArgs {
     /// Max conn
     #[arg(env, long, default_value_t = 100)]
     pub max_conn: u64,
+
+    /// Custom Public IP in case of NAT or internal network
+    #[arg(long)]
+    pub custom_ip: Option<String>,
 }
 
 pub async fn run_webrtc_server<C, CR, RPC, REQ, EMITTER>(
     http_port: u16,
     http_tls: bool,
     zone: &str,
-    _opts: WebrtcArgs,
+    opts: WebrtcArgs,
     ctx: MediaServerContext<InternalControl>,
     mut cluster: C,
     rpc_endpoint: RPC,
@@ -119,6 +123,7 @@ where
     let node_id = cluster.node_id();
     let rpc_emitter = rpc_endpoint.emitter();
     let mut gateway_feedback_tick = async_std::stream::interval(Duration::from_millis(2000));
+    let custom_ip: Option<IpAddr> = opts.custom_ip.map(|ip| ip.parse().expect("Invalid custom IP"));
 
     loop {
         let rpc = select! {
@@ -192,6 +197,7 @@ where
                     MixMinusAudioMode::Disabled,
                     vec![],
                     vec![],
+                    custom_ip,
                 )
                 .await
                 {
@@ -259,6 +265,7 @@ where
                     MixMinusAudioMode::AllAudioStreams,
                     vec![Some(WHEP_LOCAL_AUDIO_TRACK_ID)],
                     vec![Box::new(WhepAutoAttachMediaTrackMiddleware::default())],
+                    custom_ip,
                 )
                 .await
                 {
@@ -321,6 +328,7 @@ where
                     param.mix_minus_audio,
                     vec![None, None, None],
                     vec![],
+                    custom_ip,
                 )
                 .await
                 {

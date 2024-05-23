@@ -1,4 +1,7 @@
-use std::time::{Duration, Instant};
+use std::{
+    net::{IpAddr, SocketAddr},
+    time::{Duration, Instant},
+};
 
 use async_std::prelude::FutureExt;
 use cluster::rpc::{
@@ -67,7 +70,7 @@ where
     ///
     /// Next param is sdp_rewrite_scope, which is use to determine if we need to rewrite sdp or not.
     /// If rewrite has 2 types: SdpBoxRewriteScope::TrackOnly and SdpBoxRewriteScope::StreamAndTrack
-    pub async fn new(life_cycle: L, sdp_rewrite: Option<SdpBoxRewriteScope>) -> Result<Self, std::io::Error> {
+    pub async fn new(life_cycle: L, sdp_rewrite: Option<SdpBoxRewriteScope>, custom_ip: Option<IpAddr>) -> Result<Self, std::io::Error> {
         let mut rtc = Rtc::builder()
             .enable_bwe(Some(Bitrate::kbps(INIT_BWE_BITRATE_KBPS)))
             .set_ice_lite(false)
@@ -78,7 +81,7 @@ where
 
         let socket = ComposeSocket::new(0).await?;
 
-        for (addr, proto) in socket.local_addrs() {
+        for (addr, proto) in socket.local_addrs(custom_ip) {
             log::info!("[TransportWebrtc] listen on {}::/{}", proto, addr);
             let candidate = Candidate::host(addr, proto).expect("Should create candidate");
             rtc.add_local_candidate(candidate);

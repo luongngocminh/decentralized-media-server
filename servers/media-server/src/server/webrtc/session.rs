@@ -6,7 +6,7 @@ use cluster::{
 use endpoint::{MediaEndpoint, MediaEndpointMiddleware, MediaEndpointOutput, MediaEndpointPreconditional};
 use futures::{select, FutureExt};
 use media_utils::{ErrorDebugger, ServerError};
-use std::time::Duration;
+use std::{net::IpAddr, time::Duration};
 use transport::TrackId;
 use transport_webrtc::{SdpBoxRewriteScope, TransportLifeCycle, WebrtcTransport, WebrtcTransportEvent};
 
@@ -43,11 +43,12 @@ impl<E: ClusterEndpoint, L: TransportLifeCycle> WebrtcSession<E, L> {
         mix_minus_mode: MixMinusAudioMode,
         mix_minus_slots: Vec<Option<TrackId>>,
         middlewares: Vec<Box<dyn MediaEndpointMiddleware>>,
+        custom_ip: Option<IpAddr>,
     ) -> Result<(Self, String), WebrtcSessionError> {
         let mut endpoint_pre = MediaEndpointPreconditional::new(room, peer, protocol, pub_scope, sub_scope, bitrate_mode, mix_minus_mode, mix_minus_slots, middlewares);
         endpoint_pre.check().map_err(|_e| WebrtcSessionError::PreconditionError)?;
         let room = cluster.build(room, peer);
-        let mut transport = WebrtcTransport::new(life_cycle, sdp_rewrite).await.map_err(|_| WebrtcSessionError::NetworkError)?;
+        let mut transport = WebrtcTransport::new(life_cycle, sdp_rewrite, custom_ip).await.map_err(|_| WebrtcSessionError::NetworkError)?;
         for sender in senders {
             transport.map_remote_stream(sender);
         }
@@ -120,6 +121,7 @@ pub(crate) async fn run_webrtc_endpoint<C, CE, L>(
     mix_minus_mode: MixMinusAudioMode,
     mix_minus_slots: Vec<Option<TrackId>>,
     middlewares: Vec<Box<dyn MediaEndpointMiddleware>>,
+    custom_ip: Option<IpAddr>,
 ) -> Result<(String, String), ServerError>
 where
     C: Cluster<CE> + 'static,
@@ -128,7 +130,7 @@ where
 {
     let (rx, conn_id, old_tx) = context.create_peer(room, peer, None);
     let (mut session, answer_sdp) = match WebrtcSession::new(
-        room, peer, protocol, pub_scope, sub_scope, bitrate_mode, life_cycle, cluster, offer_sdp, senders, sdp_rewrite, rx, mix_minus_mode, mix_minus_slots, middlewares,
+        room, peer, protocol, pub_scope, sub_scope, bitrate_mode, life_cycle, cluster, offer_sdp, senders, sdp_rewrite, rx, mix_minus_mode, mix_minus_slots, middlewares, custom_ip,
     )
     .await
     {

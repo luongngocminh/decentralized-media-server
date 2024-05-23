@@ -23,22 +23,24 @@ impl ComposeSocket {
         })
     }
 
-    pub fn local_addrs(&self) -> Vec<(SocketAddr, Protocol)> {
+    pub fn local_addrs(&self, custom_ip: Option<IpAddr>) -> Vec<(SocketAddr, Protocol)> {
+        let mut addrs = vec![];
+        if let Some(custom_ip) = custom_ip {
+            addrs.push((SocketAddr::new(custom_ip, self.udp.local_addr().port()), self.udp.proto()));
+            addrs.push((SocketAddr::new(custom_ip, self.ssltcp.local_addr().port()), self.ssltcp.proto()));
+        }
         if let Ok(network_interfaces) = list_afinet_netifas() {
-            let mut addrs = vec![];
             for (_name, ip) in network_interfaces {
                 if ip.is_ipv4() {
                     addrs.push((SocketAddr::new(ip, self.udp.local_addr().port()), self.udp.proto()));
                     addrs.push((SocketAddr::new(ip, self.ssltcp.local_addr().port()), self.ssltcp.proto()));
                 }
             }
-            addrs
         } else {
-            vec![
-                (SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), self.udp.local_addr().port()), self.udp.proto()),
-                (SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), self.ssltcp.local_addr().port()), self.ssltcp.proto()),
-            ]
+            addrs.push((SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), self.udp.local_addr().port()), self.udp.proto()));
+            addrs.push((SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), self.ssltcp.local_addr().port()), self.ssltcp.proto()));
         }
+        addrs
     }
 
     pub async fn recv(&mut self, buf: &mut [u8]) -> std::io::Result<(usize, std::net::SocketAddr, std::net::SocketAddr, str0m::net::Protocol)> {
