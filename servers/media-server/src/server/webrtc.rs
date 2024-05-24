@@ -65,7 +65,7 @@ pub struct WebrtcArgs {
     pub max_conn: u64,
 
     /// Custom Public IP in case of NAT or internal network
-    #[arg(long)]
+    #[arg(env, long)]
     pub custom_ip: Option<String>,
 }
 

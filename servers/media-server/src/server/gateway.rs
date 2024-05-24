@@ -17,7 +17,7 @@ use futures::{select, FutureExt};
 use media_utils::{hash_str, SystemTimer, Timer, F32};
 use metrics::describe_counter;
 use metrics_dashboard::{build_dashboard_route, DashboardOptions};
-use poem::{web::Json, Route};
+use poem::{middleware::Cors, web::Json, EndpointExt, IntoEndpoint, Route};
 use poem_openapi::OpenApiService;
 
 use crate::{rpc::http::HttpRpcServer, server::gateway::logic::RouteResult};
@@ -108,7 +108,7 @@ where
         include_default: true,
     };
     let route = Route::new()
-        .nest("/", api_service)
+        .nest("/", api_service.with(Cors::new()))
         .nest("/dashboard/", build_dashboard_route(dashboard_opts))
         .nest("/ui/", ui)
         .at("/node-info/", poem::endpoint::make_sync(move |_| Json(node_info.clone())))
